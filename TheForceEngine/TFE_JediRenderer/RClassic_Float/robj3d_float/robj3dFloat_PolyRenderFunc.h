@@ -228,75 +228,92 @@ void robj3d_drawColumnFlatTexture()
 	s32 end = s_columnHeight - 1;
 	s32 offset = end * s_width;
 
-	const s32 N = s_affineCorrectionLen;
+	const s32 span = s_affineCorrectionLen;
 	if (s_perspectiveCorrect)
 	{
-		// Correct every 'N' pixels
+		// Correct every 'span' pixels
 		s32 len = s_columnHeight;
-		s32 affineSpan = min(N, len);
 
 	#if defined(USE_FLOAT_Z_DIV)
 		const f32 z0 = 1.0f / Z;
-		fixed44_20 S0 = fixed44_20(U * z0);
-		fixed44_20 T0 = fixed44_20(V * z0);
+		fixed44_20 S1 = fixed44_20(U * z0);
+		fixed44_20 T1 = fixed44_20(V * z0);
 	#else
 		const fixed44_20 z0 = div20(ONE_20, Z);
-		fixed44_20 S0 = mul20(U, z0);
-		fixed44_20 T0 = mul20(V, z0);
+		fixed44_20 S1 = mul20(U, z0);
+		fixed44_20 T1 = mul20(V, z0);
 	#endif
 
-		Z += s_col_dZdY * affineSpan;
-		U += s_col_dUVdY.x*affineSpan;
-		V += s_col_dUVdY.z*affineSpan;
+		f32 col_dZdYN = s_col_dZdY * f32(span);
+		fixed44_20 col_dUVdYNx = s_col_dUVdY.x*span;
+		fixed44_20 col_dUVdYNz = s_col_dUVdY.z*span;
 
-	#if defined(USE_FLOAT_Z_DIV)
-		const f32 z1 = 1.0f / Z;
-		fixed44_20 S1 = fixed44_20(U * z1);
-		fixed44_20 T1 = fixed44_20(V * z1);
-	#else
-		const fixed44_20 z1 = div20(ONE_20, Z);
-		fixed44_20 S1 = mul20(U, z1);
-		fixed44_20 T1 = mul20(V, z1);
-	#endif
-		fixed44_20 S = S0, T = T0;
-		fixed44_20 dSdY = (S1 - S0) / affineSpan;
-		fixed44_20 dTdY = (T1 - T0) / affineSpan;
-
-		for (s32 i = end; i >= 0; i--, offset -= s_width)
+		// affine spans
+		while (len >= span)
 		{
-			if (affineSpan <= 0 && len)
+			Z += col_dZdYN;
+			U += col_dUVdYNx;
+			V += col_dUVdYNz;
+
+			fixed44_20 S = S1;
+			fixed44_20 T = T1;
+
+#if defined(USE_FLOAT_Z_DIV)
+			const f32 z = 1.0f / Z;
+			S1 = fixed44_20(U * z);
+			T1 = fixed44_20(V * z);
+#else
+			const fixed44_20 z = div20(ONE_20, Z);
+			S1 = mul20(U, z);
+			T1 = mul20(V, z);
+#endif
+
+			fixed44_20 dSdY = (S1 - S) >> s_affineCorrectionShift;
+			fixed44_20 dTdY = (T1 - T) >> s_affineCorrectionShift;
+
+			s32 affineSpan = span;
+			while (affineSpan--)
 			{
-				affineSpan = min(N, len);
+				const u8 colorIndex = textureData[(floor20(S)&texWidthMask)*texHeight + (floor20(T)&texHeightMask)];
+				s_pcolumnOut[offset] = colorMap[colorIndex];
 
-				Z += s_col_dZdY * affineSpan;
-				U += s_col_dUVdY.x*affineSpan;
-				V += s_col_dUVdY.z*affineSpan;
-
-				S0 = S1;
-				T0 = T1;
-
-			#if defined(USE_FLOAT_Z_DIV)
-				const f32 z = 1.0f / Z;
-				S1 = fixed44_20(U * z);
-				T1 = fixed44_20(V * z);
-			#else
-				const fixed44_20 z = div20(ONE_20, Z);
-				S1 = mul20(U, z);
-				T1 = mul20(V, z);
-			#endif
-
-				S = S0; T = T0;
-				dSdY = (S1 - S0) / affineSpan;
-				dTdY = (T1 - T0) / affineSpan;
+				S += dSdY;
+				T += dTdY;
+				offset -= s_width;
 			}
-			
-			const u8 colorIndex = textureData[(floor20(S)&texWidthMask)*texHeight + (floor20(T)&texHeightMask)];
-			s_pcolumnOut[offset] = colorMap[colorIndex];
+			len -= span;
+		}
+		// Left over span.
+		if (len)
+		{
+			Z += s_col_dZdY * len;
+			U += s_col_dUVdY.x*len;
+			V += s_col_dUVdY.z*len;
 
-			S += dSdY;
-			T += dTdY;
-			affineSpan--;
-			len--;
+			fixed44_20 S = S1;
+			fixed44_20 T = T1;
+
+#if defined(USE_FLOAT_Z_DIV)
+			const f32 z = 1.0f / Z;
+			S1 = fixed44_20(U * z);
+			T1 = fixed44_20(V * z);
+#else
+			const fixed44_20 z = div20(ONE_20, Z);
+			S1 = mul20(U, z);
+			T1 = mul20(V, z);
+#endif
+
+			fixed44_20 dSdY = (S1 - S) / len;
+			fixed44_20 dTdY = (T1 - T) / len;
+			while (len--)
+			{
+				const u8 colorIndex = textureData[(floor20(S)&texWidthMask)*texHeight + (floor20(T)&texHeightMask)];
+				s_pcolumnOut[offset] = colorMap[colorIndex];
+
+				S += dSdY;
+				T += dTdY;
+				offset -= s_width;
+			}
 		}
 	}
 	else
@@ -322,6 +339,112 @@ void robj3d_drawColumnShadedTexture()
 	const s32 texWidthMask = s_polyTexture->frames[0].width - 1;
 	const s32 texHeightMask = texHeight - 1;
 
+	///////////////////////////////////////
+	// New Perspective Correct
+	///////////////////////////////////////
+	fixed44_20 U = s_col_Uv0.x;
+	fixed44_20 V = s_col_Uv0.z;
+	fixed44_20 I = s_col_I0;
+#if defined(USE_FLOAT_Z_DIV)
+	f32 Z = s_col_rZ0;
+#else
+	fixed44_20 Z = s_col_rZ0;
+#endif
+
+	s32 end = s_columnHeight - 1;
+	s32 offset = end * s_width;
+
+	const s32 span = s_affineCorrectionLen;
+	if (s_perspectiveCorrect)
+	{
+		// Correct every 'span' pixels
+		s32 len = s_columnHeight;
+
+#if defined(USE_FLOAT_Z_DIV)
+		const f32 z0 = 1.0f / Z;
+		fixed44_20 S1 = fixed44_20(U * z0);
+		fixed44_20 T1 = fixed44_20(V * z0);
+#else
+		const fixed44_20 z0 = div20(ONE_20, Z);
+		fixed44_20 S1 = mul20(U, z0);
+		fixed44_20 T1 = mul20(V, z0);
+#endif
+
+		f32 col_dZdYN = s_col_dZdY * f32(span);
+		fixed44_20 col_dUVdYNx = s_col_dUVdY.x*span;
+		fixed44_20 col_dUVdYNz = s_col_dUVdY.z*span;
+
+		// affine spans
+		while (len >= span)
+		{
+			Z += col_dZdYN;
+			U += col_dUVdYNx;
+			V += col_dUVdYNz;
+
+			fixed44_20 S = S1;
+			fixed44_20 T = T1;
+
+#if defined(USE_FLOAT_Z_DIV)
+			const f32 z = 1.0f / Z;
+			S1 = fixed44_20(U * z);
+			T1 = fixed44_20(V * z);
+#else
+			const fixed44_20 z = div20(ONE_20, Z);
+			S1 = mul20(U, z);
+			T1 = mul20(V, z);
+#endif
+
+			fixed44_20 dSdY = (S1 - S) >> s_affineCorrectionShift;
+			fixed44_20 dTdY = (T1 - T) >> s_affineCorrectionShift;
+
+			s32 affineSpan = span;
+			while (affineSpan--)
+			{
+				const u8 colorIndex = textureData[(floor20(S)&texWidthMask)*texHeight + (floor20(T)&texHeightMask)];
+				s_pcolumnOut[offset] = colorMap[colorIndex];
+
+				I += s_col_dIdY;
+				S += dSdY;
+				T += dTdY;
+				offset -= s_width;
+			}
+			len -= span;
+		}
+		// Left over span.
+		if (len)
+		{
+			Z += s_col_dZdY * len;
+			U += s_col_dUVdY.x*len;
+			V += s_col_dUVdY.z*len;
+
+			fixed44_20 S = S1;
+			fixed44_20 T = T1;
+
+#if defined(USE_FLOAT_Z_DIV)
+			const f32 z = 1.0f / Z;
+			S1 = fixed44_20(U * z);
+			T1 = fixed44_20(V * z);
+#else
+			const fixed44_20 z = div20(ONE_20, Z);
+			S1 = mul20(U, z);
+			T1 = mul20(V, z);
+#endif
+
+			fixed44_20 dSdY = (S1 - S) / len;
+			fixed44_20 dTdY = (T1 - T) / len;
+			while (len--)
+			{
+				const u8 colorIndex = textureData[(floor20(S)&texWidthMask)*texHeight + (floor20(T)&texHeightMask)];
+				s_pcolumnOut[offset] = colorMap[colorIndex];
+
+				I += s_col_dIdY;
+				S += dSdY;
+				T += dTdY;
+				offset -= s_width;
+			}
+		}
+	}
+#if 0
 	fixed44_20 U = s_col_Uv0.x;
 	fixed44_20 V = s_col_Uv0.z;
 	fixed44_20 I = s_col_I0;
@@ -406,6 +529,7 @@ void robj3d_drawColumnShadedTexture()
 			len--;
 		}
 	}
+#endif
 	else
 	{
 		for (s32 i = end; i >= 0; i--, offset -= s_width)

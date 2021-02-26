@@ -23,6 +23,17 @@ namespace RClassic_Float
 	void robj3d_drawVertices(s32 vertexCount, const vec3_float* vertices, u8 color, s32 size);
 	s32 polygonSort(const void* r0, const void* r1);
 
+	s32 log2i(s32 x)
+	{
+		s32 l2 = 0;
+		while (x > 1)
+		{
+			x >>= 1;
+			l2++;
+		}
+		return l2;
+	}
+
 	void robj3d_draw(SecObject* obj, JediModel* model)
 	{
 		// Handle transforms and vertex lighting.
@@ -49,6 +60,7 @@ namespace RClassic_Float
 		const u32 height = TFE_RenderBackend::getVirtualDisplayHeight();
 		s_perspectiveCorrect = TFE_Settings::getGraphicsSettings()->perspectiveCorrectTexturing;
 		s_affineCorrectionLen = max(8, previousPowerOf2(height >> 5));
+		s_affineCorrectionShift = log2i(s_affineCorrectionLen);
 
 		// Sort polygons from back to front.
 		qsort(s_visPolygons, visPolygonCount, sizeof(Polygon*), polygonSort);

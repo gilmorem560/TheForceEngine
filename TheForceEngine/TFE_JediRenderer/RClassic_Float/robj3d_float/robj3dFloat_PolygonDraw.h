@@ -15,6 +15,7 @@ namespace TFE_JediRenderer
 	{
 		extern bool s_perspectiveCorrect;
 		extern s32 s_affineCorrectionLen;
+		extern s32 s_affineCorrectionShift;
 
 		void robj3d_drawPolygon(Polygon* polygon, s32 polyVertexCount, SecObject* obj, JediModel* model);
 	}

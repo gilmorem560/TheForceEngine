@@ -35,6 +35,7 @@ namespace RClassic_Float
 	////////////////////////////////////////////////
 	bool s_perspectiveCorrect = false;
 	s32 s_affineCorrectionLen = 32;
+	s32 s_affineCorrectionShift = 5;
 
 	// Polygon
 	static u8  s_polyColorIndex;
