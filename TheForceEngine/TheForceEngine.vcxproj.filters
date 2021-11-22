@@ -146,6 +146,12 @@
     <Filter Include="Source\TFE_Jedi\Renderer\RClassic_Float\robj3d_float">
       <UniqueIdentifier>{acefdcf2-a934-432e-a2a3-450ff132731e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\TFE_Jedi\Renderer\RClassic_Gpu">
+      <UniqueIdentifier>{26605359-812f-43d2-8657-c4bb494634a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu">
+      <UniqueIdentifier>{e73cc885-96c8-46e8-a0e2-d95c4575fb0b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -775,6 +781,54 @@
     <ClInclude Include="TFE_FrontEndUI\editorTexture.h">
       <Filter>Source\TFE_FrontEndUI</Filter>
     </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_ClipFunc.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_Clipping.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_Culling.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_PolygonDraw.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_PolygonSetup.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_PolyRenderFunc.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_TransformAndLighting.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\fixedPoint20.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rclassicGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rclassicGpuSharedState.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\redgePairGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rflatGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rlightingGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rsectorGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rwallGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -1289,6 +1343,45 @@
     </ClCompile>
     <ClCompile Include="TFE_FrontEndUI\editorTexture.cpp">
       <Filter>Source\TFE_FrontEndUI</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_Clipping.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_Culling.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_PolygonDraw.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_PolygonSetup.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu\robj3dGpu_TransformAndLighting.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu\robj3d_gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rclassicGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rclassicGpuSharedState.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\redgePairGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rflatGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rlightingGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rsectorGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rwallGpu.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

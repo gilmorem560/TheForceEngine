@@ -12,6 +12,10 @@
 #include "RClassic_Float/rsectorFloat.h"
 #include "RClassic_Float/rclassicFloatSharedState.h"
 
+#include "RClassic_Gpu/rclassicGpu.h"
+#include "RClassic_Gpu/rsectorGpu.h"
+#include "RClassic_Gpu/rclassicGpuSharedState.h"
+
 #include <TFE_System/profiler.h>
 #include <TFE_RenderBackend/renderBackend.h>
 #include <TFE_Settings/settings.h>
@@ -94,15 +98,8 @@ namespace TFE_Jedi
 		// if (s_subRenderer == TSR_CLASSIC_FIXED) { RClassic_Fixed::setupInitCameraAndLights(); }
 		RClassic_Fixed::setupInitCameraAndLights();
 		RClassic_Float::setupInitCameraAndLights(dispWidth, dispHeight);
+		RClassic_Gpu::setupInitCameraAndLights(dispWidth, dispHeight);
 	}
-
-#if 0
-	void setResolution(s32 width, s32 height)
-	{
-		if (s_subRenderer == TSR_CLASSIC_FIXED) { RClassic_Fixed::setResolution(width, height); }
-		//else { RClassic_Float::setResolution(width, height); }
-	}
-#endif
 
 	void blitTextureToScreen(TextureData* texture, s32 x0, s32 y0)
 	{
@@ -237,6 +234,14 @@ namespace TFE_Jedi
 				vfb_getResolution(&width, &height);
 				RClassic_Float::setupInitCameraAndLights(width, height);
 			} break;
+			case TSR_CLASSIC_GPU:
+			{
+				s_sectorRenderer = new TFE_Sectors_Gpu();
+
+				u32 width, height;
+				vfb_getResolution(&width, &height);
+				RClassic_Gpu::setupInitCameraAndLights(width, height);
+			} break;
 		}
 		return JTRUE;
 	}
@@ -269,6 +274,7 @@ namespace TFE_Jedi
 		// TODO: Find a cleaner alternative.
 		RClassic_Fixed::computeCameraTransform(sector, pitch, yaw, camX, camY, camZ);
 		RClassic_Float::computeCameraTransform(sector, f32(pitch), f32(yaw), fixed16ToFloat(camX), fixed16ToFloat(camY), fixed16ToFloat(camZ));
+		RClassic_Gpu::computeCameraTransform(sector, f32(pitch), f32(yaw), fixed16ToFloat(camX), fixed16ToFloat(camY), fixed16ToFloat(camZ));
 	}
 
 	void drawWorld(u8* display, RSector* sector, const u8* colormap, const u8* lightSourceRamp)
@@ -292,6 +298,10 @@ namespace TFE_Jedi
 		else if (s_subRenderer == TSR_CLASSIC_FLOAT)
 		{
 			RClassic_Float::computeSkyOffsets();
+		}
+		else if (s_subRenderer == TSR_CLASSIC_GPU)
+		{
+			RClassic_Gpu::computeSkyOffsets();
 		}
 
 		s_display = display;
@@ -349,6 +359,11 @@ namespace TFE_Jedi
 		{
 			memset(s_rcfltState.depth1d_all, 0, s_width * sizeof(f32));
 			s_rcfltState.windowMinZ = 0.0f;
+		}
+		else if (s_subRenderer == TSR_CLASSIC_GPU)
+		{
+			memset(s_rcgpuState.depth1d_all, 0, s_width * sizeof(f32));
+			s_rcgpuState.windowMinZ = 0.0f;
 		}
 	}
 }
