@@ -11,6 +11,11 @@
 #include "rsectorGpu.h"
 #include "../rcommon.h"
 
+// GPU
+#include <TFE_RenderBackend/renderBackend.h>
+#include <TFE_RenderBackend/vertexBuffer.h>
+#include <TFE_RenderBackend/indexBuffer.h>
+
 namespace TFE_Jedi
 {
 	
@@ -303,6 +308,9 @@ namespace RClassic_Gpu
 	{
 		s_width  = width;
 		s_height = height;
+
+		// Time to setup GPU specific things.
+
 
 		buildProjectionTables(width>>1, height>>1, s_width, s_height - 2);
 

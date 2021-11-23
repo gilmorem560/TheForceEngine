@@ -274,7 +274,7 @@ namespace TFE_Jedi
 		// TODO: Find a cleaner alternative.
 		RClassic_Fixed::computeCameraTransform(sector, pitch, yaw, camX, camY, camZ);
 		RClassic_Float::computeCameraTransform(sector, f32(pitch), f32(yaw), fixed16ToFloat(camX), fixed16ToFloat(camY), fixed16ToFloat(camZ));
-		RClassic_Gpu::computeCameraTransform(sector, f32(pitch), f32(yaw), fixed16ToFloat(camX), fixed16ToFloat(camY), fixed16ToFloat(camZ));
+		//RClassic_Gpu::computeCameraTransform(sector, f32(pitch), f32(yaw), fixed16ToFloat(camX), fixed16ToFloat(camY), fixed16ToFloat(camZ));
 	}
 
 	void drawWorld(u8* display, RSector* sector, const u8* colormap, const u8* lightSourceRamp)

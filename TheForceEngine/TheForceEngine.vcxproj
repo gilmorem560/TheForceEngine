@@ -773,6 +773,8 @@ echo ^)";
     <None Include="Shaders\grid2d.vert" />
     <None Include="Shaders\grid3d.frag" />
     <None Include="Shaders\grid3d.vert" />
+    <None Include="Shaders\jedi_Wall.frag" />
+    <None Include="Shaders\jedi_Wall.vert" />
     <None Include="Shaders\line2d.frag" />
     <None Include="Shaders\line2d.vert" />
     <None Include="Shaders\line3d.frag" />

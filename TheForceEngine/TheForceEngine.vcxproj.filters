@@ -1524,5 +1524,11 @@
     <None Include="Documentation\markdown\Game\GameManual.md">
       <Filter>Documentation\markdown\Game</Filter>
     </None>
+    <None Include="Shaders\jedi_Wall.frag">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Shaders\jedi_Wall.vert">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

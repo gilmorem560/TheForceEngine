@@ -451,7 +451,7 @@ namespace TFE_Jedi
 					srcWall->drawFrame = s_drawFrame;
 					s_windowTop = winTopNext;
 					s_windowBot = winBotNext;
-					if (prevAdjoinSeg != 0)
+					if (prevAdjoinSeg)
 					{
 						if (prevAdjoinSeg->wallX1 + 1 == curAdjoinSeg->wallX0)
 						{
