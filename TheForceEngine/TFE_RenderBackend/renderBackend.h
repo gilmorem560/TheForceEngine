@@ -114,6 +114,8 @@ namespace TFE_RenderBackend
 	// virtual display
 	bool createVirtualDisplay(const VirtualDisplayInfo& vdispInfo);
 	void updateVirtualDisplay(const void* buffer, size_t size);
+	// Use a render target instead of virtual display buffer.
+	void setOutputRenderTarget(RenderTargetHandle outputRT);
 	void setPalette(const u32* palette);
 	void setColorCorrection(bool enabled, const ColorCorrection* color = nullptr);
 	bool getWidescreen();

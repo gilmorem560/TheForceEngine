@@ -543,6 +543,8 @@ namespace TFE_RenderBackend
 
 	void freeRenderTarget(RenderTargetHandle handle)
 	{
+		if (!handle) { return; }
+
 		RenderTarget* renderTarget = (RenderTarget*)handle;
 		delete renderTarget->getTexture();
 		delete renderTarget;
@@ -620,6 +622,17 @@ namespace TFE_RenderBackend
 		glDrawElements(GL_TRIANGLES, triCount * 3, indexStride == 4 ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT, (void*)(intptr_t)(indexStart * indexStride));
 	}
 
+	static RenderTargetHandle s_outputRT = nullptr;
+
+	void setOutputRenderTarget(RenderTargetHandle outputRT)
+	{
+		if (s_outputRT != outputRT)
+		{
+			s_outputRT = outputRT;
+			setupPostEffectChain();
+		}
+	}
+
 	// Setup the Post effect chain based on current settings.
 	// TODO: Move out of render backend since this should be independent of the backend.
 	void setupPostEffectChain()
@@ -649,11 +662,24 @@ namespace TFE_RenderBackend
 		}
 		TFE_PostProcess::clearEffectStack();
 
-		const PostEffectInput blitInputs[]=
+		RenderTarget* outputRT = (RenderTarget*)s_outputRT;
+		if (!outputRT)
 		{
-			{ PTYPE_DYNAMIC_TEX, s_virtualDisplay },
-			{ PTYPE_DYNAMIC_TEX, s_palette }
-		};
-		TFE_PostProcess::appendEffect(s_postEffectBlit, TFE_ARRAYSIZE(blitInputs), blitInputs, nullptr, x, y, w, h);
+			const PostEffectInput blitInputs[] =
+			{
+				{ PTYPE_DYNAMIC_TEX, s_virtualDisplay },
+				{ PTYPE_DYNAMIC_TEX, s_palette }
+			};
+			TFE_PostProcess::appendEffect(s_postEffectBlit, TFE_ARRAYSIZE(blitInputs), blitInputs, nullptr, x, y, w, h);
+		}
+		else
+		{
+			const PostEffectInput blitInputs[] =
+			{
+				{ PTYPE_TEXTURE, (void*)outputRT->getTexture() },
+				{ PTYPE_DYNAMIC_TEX, s_palette }
+			};
+			TFE_PostProcess::appendEffect(s_postEffectBlit, TFE_ARRAYSIZE(blitInputs), blitInputs, nullptr, x, y, w, h);
+		}
 	}
 }  // namespace

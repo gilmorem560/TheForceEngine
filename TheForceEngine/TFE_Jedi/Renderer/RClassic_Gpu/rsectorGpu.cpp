@@ -7,7 +7,9 @@
 #include <TFE_Jedi/Level/rtexture.h>
 #include <TFE_Jedi/Math/fixedPoint.h>
 #include <TFE_Jedi/Math/core_math.h>
+#include <TFE_System/math.h>
 
+#include "cmdBuffer.h"
 #include "rclassicGpu.h"
 #include "rsectorGpu.h"
 #include "rflatGpu.h"
@@ -168,12 +170,48 @@ namespace TFE_Jedi
 		}
 	}
 
+	// Temp
+	struct ClipRect
+	{
+		f32 x0, x1;
+		f32 y0, y1;
+	};
+
+	static CameraGpu s_camera;
+	static s32 s_viewStackDepth = 0;
+	static ClipRect s_viewRectStack[MAX_ADJOIN_DEPTH + 1];
+	static ClipRect* s_viewRect;
+
+	bool viewRect_push(ClipRect* rect)
+	{
+		if (s_viewStackDepth > MAX_ADJOIN_DEPTH)
+		{
+			return false;
+		}
+
+		s_viewRectStack[s_viewStackDepth] = *rect;
+		s_viewRect = &s_viewRectStack[s_viewStackDepth];
+		s_viewStackDepth++;
+		return true;
+	}
+
+	void viewRect_pop()
+	{
+		s_viewStackDepth--;
+		s_viewRect = nullptr;
+		if (s_viewStackDepth > 0)
+		{
+			s_viewRect = &s_viewRectStack[s_viewStackDepth - 1];
+		}
+	}
+	// End
+
 	void TFE_Sectors_Gpu::reset()
 	{
 		m_cachedSectors = nullptr;
 		m_cachedSectorCount = 0;
 	}
-
+				
 	void TFE_Sectors_Gpu::prepare()
 	{
 		allocateCachedData();
@@ -181,6 +219,46 @@ namespace TFE_Jedi
 		EdgePairFloat* flatEdge = &s_rcgpuState.flatEdgeList[s_flatCount];
 		s_rcgpuState.flatEdge = flatEdge;
 		flat_addEdges(s_screenWidth, s_minScreenX_Pixels, 0, s_rcgpuState.windowMaxY, 0, s_rcgpuState.windowMinY);
+
+		s_camera.pos.x = s_rcgpuState.cameraPos.x;
+		s_camera.pos.y = s_rcgpuState.eyeHeight;
+		s_camera.pos.z = s_rcgpuState.cameraPos.z;
+		
+		// The GPU renderer can use proper vertical rotation pitch.
+		// Build a compatible view matrix including vertical rotation.
+		f32 sinPitch, cosPitch;
+		sinCosFlt(-s_rcgpuState.cameraPitch, &sinPitch, &cosPitch);
+		s_camera.viewMtx[0] = s_rcgpuState.cosYaw;
+		s_camera.viewMtx[1] = 0.0f;
+		s_camera.viewMtx[2] = s_rcgpuState.sinYaw;
+
+		s_camera.viewMtx[3] = s_rcgpuState.sinYaw * sinPitch;
+		s_camera.viewMtx[4] = cosPitch;
+		s_camera.viewMtx[5] = -s_rcgpuState.cosYaw * sinPitch;
+
+		s_camera.viewMtx[6] =  s_rcgpuState.sinYaw * cosPitch;
+		s_camera.viewMtx[7] = -sinPitch;
+		s_camera.viewMtx[8] = -s_rcgpuState.cosYaw * cosPitch;
+
+		// Use the Jedi projection values instead of proper FOV and aspect ratio.
+		Mat4 proj = TFE_Math::computeProjMatrixExplicit(2.0f*s_rcgpuState.focalLength/f32(s_width), 2.0f*s_rcgpuState.focalLenAspect/f32(s_height), 0.01f, 1000.0f);
+		memcpy(s_camera.projMtx, proj.m, sizeof(f32) * 16);
+		TFE_CommandBuffer::startFrame(&s_camera);
+
+		ClipRect rect;
+		rect.x0 = 0;
+		rect.x1 = s_width - 1;
+		rect.y0 = 0;
+		rect.y1 = s_height - 1;
+		viewRect_push(&rect);
+	}
+	
+	void TFE_Sectors_Gpu::endFrame()
+	{
+		viewRect_pop();
+		assert(s_viewRect == nullptr);
+
+		TFE_CommandBuffer::endFrame();
 	}
 
 	void transformPointByCameraFixedToFloat_Gpu(vec3_fixed* worldPoint, vec3_float* viewPoint)
@@ -193,18 +271,353 @@ namespace TFE_Jedi
 		viewPoint->y = y - s_rcgpuState.eyeHeight;
 		viewPoint->z = z*s_rcgpuState.cosYaw + x*s_rcgpuState.negSinYaw + s_rcgpuState.cameraTrans.z;
 	}
+
+	static const ClipRect c_emptyRect = { 0 };
+
+	bool computeClipRect(RSector* sector, RWall* wall, ClipRect* rect)
+	{
+		RSector* nextSector = wall->nextSector;
+		if (!nextSector)
+		{
+			return false;
+		}
+
+		// Calculate the y range (bottom, top).
+		f32 y0, y1;
+		const s32 df = wall->drawFlags;
+		assert(df >= 0);
+		if (df <= WDF_MIDDLE)
+		{
+			if (df == WDF_MIDDLE || (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ))
+			{
+				y0 = fixed16ToFloat(sector->floorHeight);
+				y1 = fixed16ToFloat(sector->ceilingHeight);
+			}
+			else
+			{
+				y0 = fixed16ToFloat(nextSector->floorHeight);
+				y1 = fixed16ToFloat(sector->ceilingHeight);
+			}
+		}
+		else if (df == WDF_TOP)
+		{
+			if (nextSector->flags1 & SEC_FLAGS1_EXT_ADJ)
+			{
+				y0 = fixed16ToFloat(sector->floorHeight);
+				y1 = fixed16ToFloat(nextSector->ceilingHeight);
+			}
+			else
+			{
+				y0 = fixed16ToFloat(sector->floorHeight);
+				y1 = fixed16ToFloat(nextSector->ceilingHeight);
+			}
+		}
+		else if (df == WDF_TOP_AND_BOT)
+		{
+			if ((nextSector->flags1 & SEC_FLAGS1_EXT_ADJ) && (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ))
+			{
+				// TODO
+				return false;
+			}
+			else if (nextSector->flags1 & SEC_FLAGS1_EXT_ADJ)
+			{
+				y0 = fixed16ToFloat(nextSector->floorHeight);
+				y1 = fixed16ToFloat(sector->ceilingHeight);
+			}
+			else if (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ)
+			{
+				y0 = fixed16ToFloat(sector->floorHeight);
+				y1 = fixed16ToFloat(nextSector->ceilingHeight);
+			}
+			else
+			{
+				y0 = fixed16ToFloat(nextSector->floorHeight);
+				y1 = fixed16ToFloat(nextSector->ceilingHeight);
+			}
+		}
+		else // WDF_BOT
+		{
+			if (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ)
+			{
+				// TODO
+				return false;
+			}
+			else
+			{
+				y0 = fixed16ToFloat(nextSector->floorHeight);
+				y1 = fixed16ToFloat(sector->ceilingHeight);
+			}
+		}
+
+		// build world space quad.
+		const f32 x0 = fixed16ToFloat(wall->w0->x);
+		const f32 x1 = fixed16ToFloat(wall->w1->x);
+		const f32 z0 = fixed16ToFloat(wall->w0->z);
+		const f32 z1 = fixed16ToFloat(wall->w1->z);
+
+		Vec3f vtxWS[4];
+		vtxWS[0] = { x0, y1, z0 };
+		vtxWS[1] = { x1, y1, z1 };
+		vtxWS[2] = { x1, y0, z1 };
+		vtxWS[3] = { x0, y0, z0 };
+
+		// transform to view space.
+		Vec3f vtxVS[4];
+		const f32* viewMtx = s_camera.viewMtx;
+		for (s32 i = 0; i < 4; i++)
+		{
+			Vec3f rpos = { vtxWS[i].x - s_camera.pos.x, vtxWS[i].y - s_camera.pos.y,  vtxWS[i].z - s_camera.pos.z };
+
+			vtxVS[i].x = rpos.x*viewMtx[0] + rpos.y*viewMtx[1] + rpos.z*viewMtx[2];
+			vtxVS[i].y = rpos.x*viewMtx[3] + rpos.y*viewMtx[4] + rpos.z*viewMtx[5];
+			vtxVS[i].z = rpos.x*viewMtx[6] + rpos.y*viewMtx[7] + rpos.z*viewMtx[8];
+		}
+
+		// back face culling.
+		Vec3f S = { vtxVS[1].x - vtxVS[0].x, vtxVS[1].y - vtxVS[0].y , vtxVS[1].z - vtxVS[0].z };
+		Vec3f T = { vtxVS[3].x - vtxVS[0].x, vtxVS[3].y - vtxVS[0].y , vtxVS[3].z - vtxVS[0].z };
+		Vec3f N = TFE_Math::cross(&S, &T);
+		if (TFE_Math::dot(&vtxVS[0], &N) > -FLT_EPSILON)
+		{
+			return false;
+		}
+
+		// determine if the adjoin is completely behind the camera.
+		Vec3f vtxVSClipped[16];
+		s32 clippedVtx = 0;
+		f32 nearPlane = -0.02f;
+		for (s32 i = 0; i < 4; i++)
+		{
+			s32 a = i;
+			s32 b = (i + 1) & 3;
+
+			if (vtxVS[a].z < nearPlane)
+			{
+				vtxVSClipped[clippedVtx++] = vtxVS[a];
+
+				if (vtxVS[b].z >= nearPlane)
+				{
+					f32 s = (nearPlane - vtxVS[a].z) / (vtxVS[b].z - vtxVS[a].z);
+					vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s * vtxVS[b].x;
+					vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s * vtxVS[b].y;
+					vtxVSClipped[clippedVtx].z = (1.0f - s)*vtxVS[a].z + s * vtxVS[b].z;
+					clippedVtx++;
+				}
+			}
+			else if (vtxVS[b].z < nearPlane)
+			{
+				f32 s = (nearPlane - vtxVS[a].z) / (vtxVS[b].z - vtxVS[a].z);
+				vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s * vtxVS[b].x;
+				vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s * vtxVS[b].y;
+				vtxVSClipped[clippedVtx].z = (1.0f - s)*vtxVS[a].z + s*vtxVS[b].z;
+				clippedVtx++;
+			}
+		}
+		if (!clippedVtx)
+		{
+			return false;
+		}
+
+		// finally project any vertices in front of the near plane.
+		Vec4f vtxProj[16];
+		Vec4f posSS[16];
+		rect->x0 = s_width;
+		rect->x1 = -1;
+		rect->y0 = s_height;
+		rect->y1 = -1;
+
+		const f32* projMtx = s_camera.projMtx;
+		const f32 halfWidth  = f32(s_width  / 2);
+		const f32 halfHeight = f32(s_height / 2);
+		for (s32 i = 0; i < clippedVtx; i++)
+		{
+			vtxProj[i].x = vtxVSClipped[i].x * projMtx[0]  + vtxVSClipped[i].y * projMtx[1]  + vtxVSClipped[i].z * projMtx[2]  + projMtx[3];
+			vtxProj[i].y = vtxVSClipped[i].x * projMtx[4]  + vtxVSClipped[i].y * projMtx[5]  + vtxVSClipped[i].z * projMtx[6]  + projMtx[7];
+			vtxProj[i].z = vtxVSClipped[i].x * projMtx[8]  + vtxVSClipped[i].y * projMtx[9]  + vtxVSClipped[i].z * projMtx[10] + projMtx[11];
+			vtxProj[i].w = vtxVSClipped[i].x * projMtx[12] + vtxVSClipped[i].y * projMtx[12] + vtxVSClipped[i].z * projMtx[13] + projMtx[14];
+
+			assert(vtxProj[i].z >= 0.001f);
+			if (vtxProj[i].z >= 0.001f)
+			{
+				f32 rcpW = 1.0f / vtxProj[i].z;
+				posSS[i].x = vtxProj[i].x * rcpW * halfWidth  + halfWidth;
+				posSS[i].y = vtxProj[i].y * rcpW * halfHeight + halfHeight;
+				posSS[i].z = vtxProj[i].z * rcpW;
+
+				f32 ix0 = floorf(posSS[i].x);
+				f32 ix1 = floorf(posSS[i].x + 0.5f);
+				f32 iy0 = floorf(posSS[i].y);
+				f32 iy1 = floorf(posSS[i].y + 0.5f);
+
+				rect->x0 = min((f32)ix0, rect->x0);
+				rect->x1 = max((f32)ix1, rect->x1);
+				rect->y0 = min((f32)iy0, rect->y0);
+				rect->y1 = max((f32)iy1, rect->y1);
+			}
+		}
+
+		return true;
+	}
 	
 	void TFE_Sectors_Gpu::draw(RSector* sector)
 	{
 		s_ctx = this;
 		s_curSector = sector;
 		s_sectorIndex++;
+		/*
 		s_adjoinIndex++;
 		if (s_adjoinIndex > s_maxAdjoinIndex)
 		{
 			s_maxAdjoinIndex = s_adjoinIndex;
 		}
+		*/
 
+		bool testAdjoins = false;
+		if (s_curSector->prevDrawFrame != s_drawFrame)
+		{
+			testAdjoins = true;
+
+			s_curSector->prevDrawFrame = s_drawFrame;
+			SectorInfo sectorInfo;
+			sectorInfo.heights[0] = fixed16ToFloat(sector->floorHeight);
+			sectorInfo.heights[1] = fixed16ToFloat(sector->ceilingHeight);
+			// sectorInfo.floorTexOffset;
+			// sectorInfo.ceilTexOffset;
+			// sectorInfo.textureIds[0];
+			// sectorInfo.textureIds[1];
+			sectorInfo.lightLevel = floor16(sector->ambient);
+			TFE_CommandBuffer::setSectorInfo(sectorInfo);
+
+			vec2_fixed* vertices = sector->verticesWS;
+			for (s32 w = 0; w < sector->wallCount; w++)
+			{
+				RWall* wall = &sector->walls[w];
+				RSector* nextSector = wall->nextSector;
+
+				if (!nextSector)
+				{
+					WallInfo wallInfo;
+					wallInfo.v0 = { fixed16ToFloat(wall->w0->x), fixed16ToFloat(wall->w0->z) };
+					wallInfo.v1 = { fixed16ToFloat(wall->w1->x), fixed16ToFloat(wall->w1->z) };
+					wallInfo.lightLevel = max(0, floor16(sector->ambient + wall->wallLight));
+					// Stubs
+					wallInfo.textureId = 0;
+					wallInfo.uv0 = { 0,0 };
+					wallInfo.uv1 = { 1,1 };
+
+					TFE_CommandBuffer::addSolidWall(wallInfo);
+				}
+				else
+				{
+					WallInfo wallInfo;
+					wallInfo.v0 = { fixed16ToFloat(wall->w0->x), fixed16ToFloat(wall->w0->z) };
+					wallInfo.v1 = { fixed16ToFloat(wall->w1->x), fixed16ToFloat(wall->w1->z) };
+					wallInfo.lightLevel = max(0, floor16(sector->ambient + wall->wallLight));
+					// Stubs
+					wallInfo.textureId = 0;
+					wallInfo.uv0 = { 0,0 };
+					wallInfo.uv1 = { 1,1 };
+
+					const s32 df = wall->drawFlags;
+					assert(df >= 0);
+					if (df <= WDF_MIDDLE)
+					{
+						if (df == WDF_MIDDLE || (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ))
+						{
+							// wall_drawMask(wallSegment);
+						}
+						else
+						{
+							// wall_drawBottom(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(sector->floorHeight), fixed16ToFloat(nextSector->floorHeight));
+						}
+					}
+					else if (df == WDF_TOP)
+					{
+						if (nextSector->flags1 & SEC_FLAGS1_EXT_ADJ)
+						{
+							// wall_drawMask(wallSegment);
+						}
+						else
+						{
+							// wall_drawTop(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(nextSector->ceilingHeight), fixed16ToFloat(sector->ceilingHeight));
+						}
+					}
+					else if (df == WDF_TOP_AND_BOT)
+					{
+						if ((nextSector->flags1 & SEC_FLAGS1_EXT_ADJ) && (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ))
+						{
+							// wall_drawMask(wallSegment);
+						}
+						else if (nextSector->flags1 & SEC_FLAGS1_EXT_ADJ)
+						{
+							// wall_drawBottom(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(sector->floorHeight), fixed16ToFloat(nextSector->floorHeight));
+						}
+						else if (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ)
+						{
+							// wall_drawTop(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(nextSector->ceilingHeight), fixed16ToFloat(sector->ceilingHeight));
+						}
+						else
+						{
+							// wall_drawTopAndBottom(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(sector->floorHeight), fixed16ToFloat(nextSector->floorHeight));
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(nextSector->ceilingHeight), fixed16ToFloat(sector->ceilingHeight));
+						}
+					}
+					else // WDF_BOT
+					{
+						if (nextSector->flags1 & SEC_FLAGS1_EXT_FLOOR_ADJ)
+						{
+							// wall_drawMask(wallSegment);
+						}
+						else
+						{
+							// wall_drawBottom(wallSegment);
+							TFE_CommandBuffer::addWallPart(wallInfo, fixed16ToFloat(sector->floorHeight), fixed16ToFloat(nextSector->floorHeight));
+						}
+					}
+				}
+			}
+		}
+
+		//if (testAdjoins)
+		for (s32 w = 0; w < sector->wallCount && s_adjoinSegCount < MAX_ADJOIN_SEG; w++)
+		{
+			RWall* wall = &sector->walls[w];
+			RSector* nextSector = wall->nextSector;
+
+			if (nextSector)
+			{
+				ClipRect adjoinClipRect;
+				if (!computeClipRect(sector, wall, &adjoinClipRect))
+				{
+					continue;
+				}
+
+				// The new clip rect is the intersection of the window and adjoin clip rects.
+				ClipRect windowRect;
+				windowRect.x0 = max(s_viewRect->x0, adjoinClipRect.x0);
+				windowRect.x1 = min(s_viewRect->x1, adjoinClipRect.x1);
+				windowRect.y0 = max(s_viewRect->y0, adjoinClipRect.y0);
+				windowRect.y1 = min(s_viewRect->y1, adjoinClipRect.y1);
+				if (windowRect.x0 > windowRect.x1 || windowRect.y0 > windowRect.y1)
+				{
+					continue;
+				}
+
+				if (viewRect_push(&windowRect))
+				{
+					s_adjoinSegCount++;
+					draw(nextSector);
+					viewRect_pop();
+				}
+			}
+		}
+				
+	#if 0
 		s32* winTop = &s_windowTop_all[(s_adjoinDepth - 1) * s_width];
 		s32* winBot = &s_windowBot_all[(s_adjoinDepth - 1) * s_width];
 		s32* winTopNext = &s_windowTop_all[s_adjoinDepth * s_width];
@@ -551,6 +964,7 @@ namespace TFE_Jedi
 			}
 		}
 		TFE_ZONE_END(secDrawObjects);
+	#endif
 
 		s_curSector->flags1 |= SEC_FLAGS1_RENDERED;
 		s_curSector->prevDrawFrame2 = s_drawFrame;

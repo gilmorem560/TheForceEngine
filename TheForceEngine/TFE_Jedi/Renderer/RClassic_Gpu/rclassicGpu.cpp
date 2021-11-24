@@ -4,6 +4,7 @@
 #include <TFE_Jedi/Math/core_math.h>
 #include <TFE_RenderBackend/renderBackend.h>
 #include <TFE_Game/igame.h>
+#include "cmdBuffer.h"
 #include "rclassicGpuSharedState.h"
 #include "rlightingGpu.h"
 #include "rflatGpu.h"
@@ -282,6 +283,7 @@ namespace RClassic_Gpu
 		s_width = width;
 		s_height = height;
 
+		TFE_CommandBuffer::init();
 		buildProjectionTables(width >> 1, height >> 1, s_width, s_height - 2);
 
 		fixed16_16 prevParallax0, prevParallax1;
@@ -309,9 +311,7 @@ namespace RClassic_Gpu
 		s_width  = width;
 		s_height = height;
 
-		// Time to setup GPU specific things.
-
-
+		TFE_CommandBuffer::init();
 		buildProjectionTables(width>>1, height>>1, s_width, s_height - 2);
 
 		fixed16_16 prevParallax0, prevParallax1;

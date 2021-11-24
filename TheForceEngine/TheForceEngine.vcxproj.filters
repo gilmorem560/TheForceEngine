@@ -688,10 +688,10 @@
     <ClInclude Include="TFE_DarkForces\Actor\phaseOne.h">
       <Filter>Source\TFE_DarkForces\Actor</Filter>
     </ClInclude>
-	<ClInclude Include="version.h">
+    <ClInclude Include="version.h">
       <Filter>Source</Filter>
     </ClInclude>
-	<ClInclude Include="TFE_DarkForces\gameList.h">
+    <ClInclude Include="TFE_DarkForces\gameList.h">
       <Filter>Source\TFE_DarkForces</Filter>
     </ClInclude>
     <ClInclude Include="TFE_DarkForces\generator.h">
@@ -830,6 +830,9 @@
       <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
     </ClInclude>
     <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\rwallGpu.h">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClInclude>
+    <ClInclude Include="TFE_Jedi\Renderer\RClassic_Gpu\cmdBuffer.h">
       <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1230,7 +1233,7 @@
     <ClCompile Include="TFE_DarkForces\playerCollision.cpp">
       <Filter>Source\TFE_DarkForces</Filter>
     </ClCompile>
-	<ClCompile Include="TFE_DarkForces\gameList.cpp">
+    <ClCompile Include="TFE_DarkForces\gameList.cpp">
       <Filter>Source\TFE_DarkForces</Filter>
     </ClCompile>
     <ClCompile Include="TFE_Memory\memoryRegion.cpp">
@@ -1388,7 +1391,10 @@
     </ClCompile>
     <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\rwallGpu.cpp">
       <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
-	</ClCompile>
+    </ClCompile>
+    <ClCompile Include="TFE_Jedi\Renderer\RClassic_Gpu\cmdBuffer.cpp">
+      <Filter>Source\TFE_Jedi\Renderer\RClassic_Gpu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TheForceEngine.rc">

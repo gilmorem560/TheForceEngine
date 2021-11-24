@@ -179,6 +179,11 @@ namespace TFE_Jedi
 		flat_addEdges(s_screenWidth, s_minScreenX_Pixels, 0, s_rcfltState.windowMaxY, 0, s_rcfltState.windowMinY);
 	}
 
+	void TFE_Sectors_Float::endFrame()
+	{
+		// Nothing to do
+	}
+
 	void transformPointByCameraFixedToFloat(vec3_fixed* worldPoint, vec3_float* viewPoint)
 	{
 		const f32 x = fixed16ToFloat(worldPoint->x);

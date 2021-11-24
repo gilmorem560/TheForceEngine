@@ -40,6 +40,7 @@ namespace TFE_Jedi
 		// Sub-Renderer specific
 		void reset() override;
 		void prepare() override;
+		void endFrame() override;
 		void draw(RSector* sector) override;
 		void subrendererChanged() override;
 

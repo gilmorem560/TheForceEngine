@@ -58,6 +58,7 @@ namespace TFE_Jedi
 		// Sub-Renderer specific
 		virtual void reset() = 0;
 		virtual void prepare() = 0;
+		virtual void endFrame() = 0;
 		virtual void draw(RSector* sector) = 0;
 		virtual void subrendererChanged() = 0;
 

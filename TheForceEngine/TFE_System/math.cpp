@@ -25,6 +25,21 @@ namespace TFE_Math
 		return res;
 	}
 
+	Mat4 computeProjMatrixExplicit(f32 xScale, f32 yScale, f32 zNear, f32 zFar)
+	{
+		// Build a projection matrix.
+		const f32 zScale = zFar / (zNear - zFar);
+		const f32 wScale = zNear * zFar / (zNear - zFar);
+
+		Mat4 r;
+		r.m0 = { xScale, 0.0f, 0.0f, 0.0f };
+		r.m1 = { 0.0f, yScale, 0.0f, 0.0f };
+		r.m2 = { 0.0f, 0.0f, zScale, wScale };
+		r.m3 = { 0.0f, 0.0f,  -1.0f, 0.0f };
+
+		return r;
+	}
+
 	Mat4 computeProjMatrix(f32 fovInRadians, f32 aspectRatio, f32 zNear, f32 zFar)
 	{
 		// Build a projection matrix.
