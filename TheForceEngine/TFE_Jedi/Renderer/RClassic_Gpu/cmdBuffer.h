@@ -34,6 +34,12 @@ namespace TFE_CommandBuffer
 	void endFrame();
 
 	void setSectorInfo(const SectorInfo& sectorInfo);
+	void setClipRegion(s32 x0, s32 y0, s32 x1, s32 y1);
 	void addSolidWall(const WallInfo& wallInfo);
 	void addWallPart(const WallInfo& wallInfo, f32 bot, f32 top);
+
+	u32  getWallQuadCount();
+	void drawWalls(u32 quadStart, u32 quadCount);
+	
+	void addDebugRect(Vec2f* v0, Vec2f* v1);
 }  // TFE_CommandBuffer

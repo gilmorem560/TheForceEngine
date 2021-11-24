@@ -550,6 +550,12 @@ namespace TFE_RenderBackend
 		delete renderTarget;
 	}
 
+	void setViewport(s32 x0, s32 y0, s32 x1, s32 y1)
+	{
+		//glViewport(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+		glScissor(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+	}
+
 	void bindRenderTarget(RenderTargetHandle handle)
 	{
 		RenderTarget* renderTarget = (RenderTarget*)handle;

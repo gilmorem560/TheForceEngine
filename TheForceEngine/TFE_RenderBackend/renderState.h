@@ -18,6 +18,7 @@ enum StateEnable
 	STATE_BLEND = (1 << 1),
 	STATE_DEPTH_TEST = (1 << 2),
 	STATE_DEPTH_WRITE = (1 << 3),
+	STATE_SCISSOR = (1 << 4),
 };
 
 enum StateBlendFactor

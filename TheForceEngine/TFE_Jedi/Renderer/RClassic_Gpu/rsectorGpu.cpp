@@ -8,6 +8,7 @@
 #include <TFE_Jedi/Math/fixedPoint.h>
 #include <TFE_Jedi/Math/core_math.h>
 #include <TFE_System/math.h>
+#include <TFE_FrontEndUI/console.h>
 
 #include "cmdBuffer.h"
 #include "rclassicGpu.h"
@@ -175,12 +176,16 @@ namespace TFE_Jedi
 	{
 		f32 x0, x1;
 		f32 y0, y1;
+		Vec3f planeNormal;
+		Vec3f planeVertex;
 	};
 
 	static CameraGpu s_camera;
 	static s32 s_viewStackDepth = 0;
 	static ClipRect s_viewRectStack[MAX_ADJOIN_DEPTH + 1];
 	static ClipRect* s_viewRect;
+	static bool s_showClipRects = false;
+	static bool s_setupCVar = true;
 
 	bool viewRect_push(ClipRect* rect)
 	{
@@ -192,6 +197,8 @@ namespace TFE_Jedi
 		s_viewRectStack[s_viewStackDepth] = *rect;
 		s_viewRect = &s_viewRectStack[s_viewStackDepth];
 		s_viewStackDepth++;
+
+		TFE_CommandBuffer::setClipRegion((s32)s_viewRect->x0, (s32)s_viewRect->y0, (s32)s_viewRect->x1, (s32)s_viewRect->y1);
 		return true;
 	}
 
@@ -202,6 +209,7 @@ namespace TFE_Jedi
 		if (s_viewStackDepth > 0)
 		{
 			s_viewRect = &s_viewRectStack[s_viewStackDepth - 1];
+			TFE_CommandBuffer::setClipRegion((s32)s_viewRect->x0, (s32)s_viewRect->y0, (s32)s_viewRect->x1, (s32)s_viewRect->y1);
 		}
 	}
 	// End
@@ -214,6 +222,12 @@ namespace TFE_Jedi
 				
 	void TFE_Sectors_Gpu::prepare()
 	{
+		if (s_setupCVar)
+		{
+			s_setupCVar = false;
+			CVAR_BOOL(s_showClipRects, "show_clip_rects", 0, "Enable to see clip rects for adjoin culling.");
+		}
+
 		allocateCachedData();
 
 		EdgePairFloat* flatEdge = &s_rcgpuState.flatEdgeList[s_flatCount];
@@ -250,6 +264,8 @@ namespace TFE_Jedi
 		rect.x1 = s_width - 1;
 		rect.y0 = 0;
 		rect.y1 = s_height - 1;
+		rect.planeNormal = { 0.0f, 0.0f, -1.0f  };
+		rect.planeVertex = { 0.0f, 0.0f, -0.02f };
 		viewRect_push(&rect);
 	}
 	
@@ -273,6 +289,12 @@ namespace TFE_Jedi
 	}
 
 	static const ClipRect c_emptyRect = { 0 };
+
+	f32 computePlaneDist(ClipRect* rect, Vec3f* vtx)
+	{
+		Vec3f r = { vtx->x - rect->planeVertex.x, vtx->y - rect->planeVertex.y, vtx->z - rect->planeVertex.z };
+		return r.x*rect->planeNormal.x + r.y*rect->planeNormal.y + r.z*rect->planeNormal.z;
+	}
 
 	bool computeClipRect(RSector* sector, RWall* wall, ClipRect* rect)
 	{
@@ -381,8 +403,11 @@ namespace TFE_Jedi
 		{
 			return false;
 		}
+		rect->planeNormal = TFE_Math::normalize(&N);
+		rect->planeNormal = { -rect->planeNormal.x, -rect->planeNormal.y, -rect->planeNormal.z };
+		rect->planeVertex = vtxVS[0];
 
-		// determine if the adjoin is completely behind the camera.
+		// determine if the adjoin is completely behind the portal.
 		Vec3f vtxVSClipped[16];
 		s32 clippedVtx = 0;
 		f32 nearPlane = -0.02f;
@@ -391,24 +416,27 @@ namespace TFE_Jedi
 			s32 a = i;
 			s32 b = (i + 1) & 3;
 
-			if (vtxVS[a].z < nearPlane)
+			f32 pDistA = computePlaneDist(s_viewRect, &vtxVS[a]);
+			f32 pDistB = computePlaneDist(s_viewRect, &vtxVS[b]);
+
+			if (pDistA > 0.0f)
 			{
 				vtxVSClipped[clippedVtx++] = vtxVS[a];
 
-				if (vtxVS[b].z >= nearPlane)
+				if (pDistB < 0.0f)
 				{
-					f32 s = (nearPlane - vtxVS[a].z) / (vtxVS[b].z - vtxVS[a].z);
-					vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s * vtxVS[b].x;
-					vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s * vtxVS[b].y;
-					vtxVSClipped[clippedVtx].z = (1.0f - s)*vtxVS[a].z + s * vtxVS[b].z;
+					f32 s = (0.0f - pDistA) / (pDistB - pDistA);
+					vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s*vtxVS[b].x;
+					vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s*vtxVS[b].y;
+					vtxVSClipped[clippedVtx].z = (1.0f - s)*vtxVS[a].z + s*vtxVS[b].z;
 					clippedVtx++;
 				}
 			}
-			else if (vtxVS[b].z < nearPlane)
+			else if (pDistB > 0.0f)
 			{
-				f32 s = (nearPlane - vtxVS[a].z) / (vtxVS[b].z - vtxVS[a].z);
-				vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s * vtxVS[b].x;
-				vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s * vtxVS[b].y;
+				f32 s = (0.0f - pDistA) / (pDistB - pDistA);
+				vtxVSClipped[clippedVtx].x = (1.0f - s)*vtxVS[a].x + s*vtxVS[b].x;
+				vtxVSClipped[clippedVtx].y = (1.0f - s)*vtxVS[a].y + s*vtxVS[b].y;
 				vtxVSClipped[clippedVtx].z = (1.0f - s)*vtxVS[a].z + s*vtxVS[b].z;
 				clippedVtx++;
 			}
@@ -434,25 +462,27 @@ namespace TFE_Jedi
 			vtxProj[i].x = vtxVSClipped[i].x * projMtx[0]  + vtxVSClipped[i].y * projMtx[1]  + vtxVSClipped[i].z * projMtx[2]  + projMtx[3];
 			vtxProj[i].y = vtxVSClipped[i].x * projMtx[4]  + vtxVSClipped[i].y * projMtx[5]  + vtxVSClipped[i].z * projMtx[6]  + projMtx[7];
 			vtxProj[i].z = vtxVSClipped[i].x * projMtx[8]  + vtxVSClipped[i].y * projMtx[9]  + vtxVSClipped[i].z * projMtx[10] + projMtx[11];
-			vtxProj[i].w = vtxVSClipped[i].x * projMtx[12] + vtxVSClipped[i].y * projMtx[12] + vtxVSClipped[i].z * projMtx[13] + projMtx[14];
 
-			assert(vtxProj[i].z >= 0.001f);
-			if (vtxProj[i].z >= 0.001f)
+			// pancake it?
+			vtxProj[i].z = max(vtxProj[i].z, 0.001f);
+
+			// assert(vtxProj[i].z >= 0.001f);
+			//if (vtxProj[i].z >= 0.001f)
 			{
-				f32 rcpW = 1.0f / vtxProj[i].z;
-				posSS[i].x = vtxProj[i].x * rcpW * halfWidth  + halfWidth;
-				posSS[i].y = vtxProj[i].y * rcpW * halfHeight + halfHeight;
-				posSS[i].z = vtxProj[i].z * rcpW;
+				f32 rcpZ = 1.0f / vtxProj[i].z;
+				posSS[i].x = vtxProj[i].x * rcpZ * halfWidth  + halfWidth;
+				posSS[i].y = vtxProj[i].y * rcpZ * halfHeight + halfHeight;
+				posSS[i].z = vtxProj[i].z * rcpZ;
 
-				f32 ix0 = floorf(posSS[i].x);
-				f32 ix1 = floorf(posSS[i].x + 0.5f);
-				f32 iy0 = floorf(posSS[i].y);
-				f32 iy1 = floorf(posSS[i].y + 0.5f);
+				f32 x0 = floorf(posSS[i].x);
+				f32 x1 = floorf(posSS[i].x + 0.5f);
+				f32 y0 = floorf(posSS[i].y);
+				f32 y1 = floorf(posSS[i].y + 0.5f);
 
-				rect->x0 = min((f32)ix0, rect->x0);
-				rect->x1 = max((f32)ix1, rect->x1);
-				rect->y0 = min((f32)iy0, rect->y0);
-				rect->y1 = max((f32)iy1, rect->y1);
+				rect->x0 = min(x0, rect->x0);
+				rect->x1 = max(x1, rect->x1);
+				rect->y0 = min(y0, rect->y0);
+				rect->y1 = max(y1, rect->y1);
 			}
 		}
 
@@ -472,10 +502,13 @@ namespace TFE_Jedi
 		}
 		*/
 
+		SectorCached* cached = &m_cachedSectors[sector->index];
+
 		bool testAdjoins = false;
 		if (s_curSector->prevDrawFrame != s_drawFrame)
 		{
 			testAdjoins = true;
+			u32 quadStart = TFE_CommandBuffer::getWallQuadCount();
 
 			s_curSector->prevDrawFrame = s_drawFrame;
 			SectorInfo sectorInfo;
@@ -581,8 +614,15 @@ namespace TFE_Jedi
 					}
 				}
 			}
+
+			u32 quadCount = TFE_CommandBuffer::getWallQuadCount() - quadStart + 1;
+			cached->quadStart = quadStart;
+			cached->quadCount = quadCount;
 		}
 
+		TFE_CommandBuffer::drawWalls(cached->quadStart, cached->quadCount);
+
+		// TODO: Next Step - Clip/cull against the window plane.
 		//if (testAdjoins)
 		for (s32 w = 0; w < sector->wallCount && s_adjoinSegCount < MAX_ADJOIN_SEG; w++)
 		{
@@ -603,6 +643,8 @@ namespace TFE_Jedi
 				windowRect.x1 = min(s_viewRect->x1, adjoinClipRect.x1);
 				windowRect.y0 = max(s_viewRect->y0, adjoinClipRect.y0);
 				windowRect.y1 = min(s_viewRect->y1, adjoinClipRect.y1);
+				windowRect.planeNormal = adjoinClipRect.planeNormal;
+				windowRect.planeVertex = adjoinClipRect.planeVertex;
 				if (windowRect.x0 > windowRect.x1 || windowRect.y0 > windowRect.y1)
 				{
 					continue;
@@ -610,6 +652,13 @@ namespace TFE_Jedi
 
 				if (viewRect_push(&windowRect))
 				{
+					if (s_showClipRects)
+					{
+						Vec2f w0 = { 2.0f*windowRect.x0 / f32(s_width) - 1.0f, 2.0f*windowRect.y0 / f32(s_height) - 1.0f };
+						Vec2f w1 = { 2.0f*windowRect.x1 / f32(s_width) - 1.0f, 2.0f*windowRect.y1 / f32(s_height) - 1.0f };
+						TFE_CommandBuffer::addDebugRect(&w0, &w1);
+					}
+
 					s_adjoinSegCount++;
 					draw(nextSector);
 					viewRect_pop();

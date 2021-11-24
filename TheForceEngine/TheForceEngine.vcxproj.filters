@@ -1542,5 +1542,11 @@
     <None Include="Shaders\jedi_Wall.vert">
       <Filter>Source\Shaders</Filter>
     </None>
+    <None Include="Shaders\jedi_DebugRect.frag">
+      <Filter>Source\Shaders</Filter>
+    </None>
+    <None Include="Shaders\jedi_DebugRect.vert">
+      <Filter>Source\Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

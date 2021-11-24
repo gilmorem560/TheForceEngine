@@ -70,6 +70,10 @@ namespace TFE_RenderState
 			{
 				glDepthMask(true);
 			}
+			if (stateToChange & STATE_SCISSOR)
+			{
+				glEnable(GL_SCISSOR_TEST);
+			}
 			s_currentState |= stateFlags;
 		}
 		else
@@ -90,6 +94,10 @@ namespace TFE_RenderState
 			if (stateToChange & STATE_DEPTH_WRITE)
 			{
 				glDepthMask(false);
+			}
+			if (stateToChange & STATE_SCISSOR)
+			{
+				glDisable(GL_SCISSOR_TEST);
 			}
 			s_currentState &= ~stateFlags;
 		}

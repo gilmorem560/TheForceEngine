@@ -30,6 +30,9 @@ namespace TFE_Jedi
 		// Cached Texture offsets
 		vec2_float floorOffset;
 		vec2_float ceilOffset;
+
+		u32 quadStart;
+		u32 quadCount;
 	};
 
 	class TFE_Sectors_Float : public TFE_Sectors
