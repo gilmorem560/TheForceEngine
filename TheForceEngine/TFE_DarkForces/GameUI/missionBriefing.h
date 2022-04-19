@@ -22,5 +22,4 @@ namespace TFE_DarkForces
 
 	extern s16 s_briefY;
 	extern s32 s_briefingMaxY;
-	extern LRect s_overlayRect;
 }

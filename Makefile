@@ -45,6 +45,8 @@ AUDIO		=	TheForceEngine/TFE_Audio/audioDevice.o \
 				TheForceEngine/TFE_Audio/audioSystem.o \
 				TheForceEngine/TFE_Audio/midiDevice.o \
 				TheForceEngine/TFE_Audio/midiPlayer.o \
+				TheForceEngine/TFE_Audio/RtAudio.o \
+				TheForceEngine/TFE_Audio/RtMidi.o
 
 DARKFORCES	=	TheForceEngine/TFE_DarkForces/Actor/actor.o \
 				TheForceEngine/TFE_DarkForces/Actor/actorDebug.o \
@@ -66,19 +68,42 @@ DARKFORCES	=	TheForceEngine/TFE_DarkForces/Actor/actor.o \
 				TheForceEngine/TFE_DarkForces/GameUI/delt.o \
 				TheForceEngine/TFE_DarkForces/GameUI/editBox.o \
 				TheForceEngine/TFE_DarkForces/GameUI/escapeMenu.o \
+				TheForceEngine/TFE_DarkForces/GameUI/menu.o \
+				TheForceEngine/TFE_DarkForces/GameUI/missionBriefing.o \
+				TheForceEngine/TFE_DarkForces/GameUI/pda.o \
 				TheForceEngine/TFE_DarkForces/GameUI/uiDraw.o \
 				TheForceEngine/TFE_DarkForces/agent.o \
 				TheForceEngine/TFE_DarkForces/animLogic.o \
 				TheForceEngine/TFE_DarkForces/automap.o \
+				TheForceEngine/TFE_DarkForces/briefingList.o \
 				TheForceEngine/TFE_DarkForces/cheats.o \
 				TheForceEngine/TFE_DarkForces/config.o \
 				TheForceEngine/TFE_DarkForces/darkForcesMain.o \
-				TheForceEngine/TFE_DarkForces/gameList.o \
 				TheForceEngine/TFE_DarkForces/gameMessage.o \
 				TheForceEngine/TFE_DarkForces/generator.o \
 				TheForceEngine/TFE_DarkForces/hitEffect.o \
 				TheForceEngine/TFE_DarkForces/hud.o \
 				TheForceEngine/TFE_DarkForces/item.o \
+				TheForceEngine/TFE_DarkForces/Landru/cutscene.o \
+				TheForceEngine/TFE_DarkForces/Landru/cutsceneList.o \
+				TheForceEngine/TFE_DarkForces/Landru/cutscene_film.o \
+				TheForceEngine/TFE_DarkForces/Landru/cutscene_player.o \
+				TheForceEngine/TFE_DarkForces/Landru/lactor.o \
+				TheForceEngine/TFE_DarkForces/Landru/lactorAnim.o \
+				TheForceEngine/TFE_DarkForces/Landru/lactorCust.o \
+				TheForceEngine/TFE_DarkForces/Landru/lactorDelt.o \
+				TheForceEngine/TFE_DarkForces/Landru/lcanvas.o \
+				TheForceEngine/TFE_DarkForces/Landru/ldraw.o \
+				TheForceEngine/TFE_DarkForces/Landru/lfade.o \
+				TheForceEngine/TFE_DarkForces/Landru/lfont.o \
+				TheForceEngine/TFE_DarkForces/Landru/lmusic.o \
+				TheForceEngine/TFE_DarkForces/Landru/lpalette.o \
+				TheForceEngine/TFE_DarkForces/Landru/lrect.o \
+				TheForceEngine/TFE_DarkForces/Landru/lsound.o \
+				TheForceEngine/TFE_DarkForces/Landru/lsystem.o \
+				TheForceEngine/TFE_DarkForces/Landru/ltimer.o \
+				TheForceEngine/TFE_DarkForces/Landru/lview.o \
+				TheForceEngine/TFE_DarkForces/Landru/textCrawl.o \
 				TheForceEngine/TFE_DarkForces/logic.o \
 				TheForceEngine/TFE_DarkForces/mission.o \
 				TheForceEngine/TFE_DarkForces/pickup.o \
@@ -189,6 +214,7 @@ SYSTEM		=	TheForceEngine/TFE_System/log.o \
 				TheForceEngine/TFE_System/profiler.o \
 				TheForceEngine/TFE_System/system.o \
 				TheForceEngine/TFE_System/Threads/Linux/mutexLinux.o \
+				TheForceEngine/TFE_System/Threads/Linux/signalLinux.o \
 				TheForceEngine/TFE_System/Threads/Linux/threadLinux.o
 
 UI			=	TheForceEngine/TFE_Ui/imGUI/imgui.o \

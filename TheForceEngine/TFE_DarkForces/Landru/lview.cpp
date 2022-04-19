@@ -9,6 +9,7 @@
 #include <TFE_Game/igame.h>
 #include <TFE_Jedi/Renderer/virtualFramebuffer.h>
 #include <TFE_Jedi/Math/core_math.h>
+#include <string.h>
 #include <assert.h>
 
 using namespace TFE_Jedi;

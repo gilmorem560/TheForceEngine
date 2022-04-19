@@ -4,6 +4,7 @@
 #include <TFE_Game/igame.h>
 #include <TFE_Jedi/Math/core_math.h>
 #include <TFE_Jedi/Renderer/virtualFramebuffer.h>
+#include <string.h>
 #include <assert.h>
 
 using namespace TFE_Jedi;
@@ -637,6 +638,10 @@ namespace TFE_DarkForces
 	{
 		pal->resType = resType;
 		strcpy(pal->name, name);
-		_strlwr(pal->name);
+		#ifdef WIN32
+			_strlwr(pal->name);
+		#else
+			strlwr(pal->name);
+		#endif
 	}
 }

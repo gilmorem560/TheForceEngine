@@ -14,6 +14,8 @@
 #include <TFE_Jedi/Renderer/virtualFramebuffer.h>
 #include <TFE_FileSystem/filestream.h>
 #include <TFE_System/parser.h>
+#include <string.h>
+
 
 using namespace TFE_Jedi;
 
