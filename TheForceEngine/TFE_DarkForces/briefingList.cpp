@@ -78,10 +78,17 @@ namespace TFE_DarkForces
 			}
 			else
 			{
-				_strlwr(mission);
-				_strlwr(archive);
-				_strlwr(bgAnim);
-				_strlwr(palette);
+				#ifdef _WIN32
+					_strlwr(mission);
+					_strlwr(archive);
+					_strlwr(bgAnim);
+					_strlwr(palette);
+				#else
+					strlwr(mission);
+					strlwr(archive);
+					strlwr(bgAnim);
+					strlwr(palette);
+				#endif
 
 				strcpy(info->mission, mission);
 				strcpy(info->archive, archive);

@@ -637,6 +637,10 @@ namespace TFE_DarkForces
 	{
 		pal->resType = resType;
 		strcpy(pal->name, name);
-		_strlwr(pal->name);
+		#ifdef WIN32
+			_strlwr(pal->name);
+		#else
+			strlwr(pal->name);
+		#endif
 	}
 }

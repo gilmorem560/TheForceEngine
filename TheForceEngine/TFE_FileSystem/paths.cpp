@@ -232,7 +232,11 @@ namespace TFE_Paths
 	{
 		char fileNameLC[TFE_MAX_PATH];
 		strcpy(fileNameLC, fileName);
-		_strlwr(fileNameLC);
+		#ifdef WIN32
+			_strlwr(fileNameLC);
+		#else
+			strlwr(fileNameLC);
+		#endif
 
 		char filePathFixed[TFE_MAX_PATH];
 		strcpy(filePathFixed, filePath);

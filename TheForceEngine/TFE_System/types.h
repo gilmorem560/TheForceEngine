@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
+#include <ctype.h>
 #include <atomic>
 
 typedef uint64_t u64;
@@ -104,6 +105,15 @@ enum JediBool : u32
 #ifdef _WIN32
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
+#else
+inline char* strlwr(char *s)
+{
+	for (char *c = s; *c != '\0'; ++c)
+	{
+		*c = tolower(*c);
+	}
+	return s;
+}
 #endif
 
 #ifdef _WIN32

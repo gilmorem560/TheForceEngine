@@ -4,6 +4,8 @@
 
 class MutexLinux : public Mutex
 {
+	friend class SignalLinux;
+
 public:
 	MutexLinux();
 	virtual ~MutexLinux();
