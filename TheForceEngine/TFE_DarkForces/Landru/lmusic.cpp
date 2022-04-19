@@ -7,6 +7,7 @@
 #include <TFE_FileSystem/filestream.h>
 #include <TFE_FileSystem/paths.h>
 #include <TFE_System/parser.h>
+#include <string.h>
 #include <assert.h>
 
 namespace TFE_DarkForces

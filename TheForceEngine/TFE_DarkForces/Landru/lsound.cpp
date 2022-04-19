@@ -5,6 +5,7 @@
 #include <TFE_FileSystem/filestream.h>
 #include <TFE_FileSystem/paths.h>
 #include <TFE_Jedi/Math/core_math.h>
+#include <string.h>
 #include <assert.h>
 
 using namespace TFE_Jedi;

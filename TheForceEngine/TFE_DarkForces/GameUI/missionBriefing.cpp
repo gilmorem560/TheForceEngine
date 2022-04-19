@@ -50,7 +50,7 @@ namespace TFE_DarkForces
 
 	s16 s_briefY;
 	s32 s_briefingMaxY;
-	LRect s_overlayRect;
+	static LRect s_overlayRect;
 
 	enum
 	{

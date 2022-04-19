@@ -7,6 +7,7 @@
 #include <TFE_Jedi/Math/core_math.h>
 #include <TFE_Jedi/Math/fixedPoint.h>
 #include <TFE_Game/igame.h>
+#include <string.h>
 #include <assert.h>
 
 using namespace TFE_Jedi;

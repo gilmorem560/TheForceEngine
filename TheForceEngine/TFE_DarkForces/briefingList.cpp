@@ -4,6 +4,7 @@
 #include <TFE_System/system.h>
 #include <TFE_FileSystem/filestream.h>
 #include <TFE_System/parser.h>
+#include <string.h>
 
 namespace TFE_DarkForces
 {
